@@ -6,17 +6,57 @@ import (
 )
 
 func TestLexer(t *testing.T) {
-	input := `=+(){},;`
+	input := `let five = 5;
+			let ten = 10;
+			let add = fn(x, y) {
+			x + y;
+			};
+			let result = add(five, ten);
+			!-/*5;
+			5 < 10 > 5;
+			`
 
-	expectedTokens := []token.Token{
-		token.Token{token.ASSIGN, "="},
-		token.Token{token.PLUS, "+"},
-		token.Token{token.LPAREN, "("},
-		token.Token{token.RPAREN, ")"},
-		token.Token{token.LBRACE, "{"},
-		token.Token{token.RBRACE, "}"},
-		token.Token{token.COMMA, ","},
-		token.Token{token.SEMICOLON, ";"},
+	expectedTokens := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{token.LET, "let"},
+		{token.IDENT, "five"},
+		{token.ASSIGN, "="},
+		{token.INT, "5"},
+		{token.SEMICOLON, ";"},
+		{token.LET, "let"},
+		{token.IDENT, "ten"},
+		{token.ASSIGN, "="},
+		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
+		{token.LET, "let"},
+		{token.IDENT, "add"},
+		{token.ASSIGN, "="},
+		{token.FUNCTION, "fn"},
+		{token.LPAREN, "("},
+		{token.IDENT, "x"},
+		{token.COMMA, ","},
+		{token.IDENT, "y"},
+		{token.RPAREN, ")"},
+		{token.LBRACE, "{"},
+		{token.IDENT, "x"},
+		{token.PLUS, "+"},
+		{token.IDENT, "y"},
+		{token.SEMICOLON, ";"},
+		{token.RBRACE, "}"},
+		{token.SEMICOLON, ";"},
+		{token.LET, "let"},
+		{token.IDENT, "result"},
+		{token.ASSIGN, "="},
+		{token.IDENT, "add"},
+		{token.LPAREN, "("},
+		{token.IDENT, "five"},
+		{token.COMMA, ","},
+		{token.IDENT, "ten"},
+		{token.RPAREN, ")"},
+		{token.SEMICOLON, ";"},
+		{token.EOF, ""},
 	}
 
 	l := New(input)
@@ -24,12 +64,12 @@ func TestLexer(t *testing.T) {
 	var nextToken token.Token
 	for k, v := range expectedTokens {
 		nextToken = l.NextToken()
-		if v.Type != nextToken.Type {
-			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q", k, v.Type, nextToken.Type)
+		if v.expectedType != nextToken.Type {
+			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q", k, v.expectedType, nextToken.Type)
 		}
 
-		if v.Literal != nextToken.Literal {
-			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q", k, v.Literal, nextToken.Literal)
+		if v.expectedLiteral != nextToken.Literal {
+			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q", k, v.expectedLiteral, nextToken.Literal)
 		}
 	}
 }
