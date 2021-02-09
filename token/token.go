@@ -16,16 +16,16 @@ const (
 	INT   = "INT"   // 5, 10...
 
 	// Operators
-	ASSIGN = "="  // 赋值
-	PLUS   = "+"  // 加法
-	MINUS  = "-"  // 减法
-	MULTI  = "*"  // 乘法
-	DIV    = "/"  // 除法
-	EQUAL  = "==" // 相等
-	NEQUAL = "!=" // 不相等
-	LT     = "<"  // 小于
-	GT     = ">"  // 大于
-	NEG    = "!"  // 取反
+	ASSIGN   = "="  // 赋值
+	PLUS     = "+"  // 加法
+	MINUS    = "-"  // 减法
+	ASTERISK = "*"  // 乘法
+	SLASH    = "/"  // 除法
+	EQ       = "==" // 相等
+	NOT_EQ   = "!=" // 不相等
+	LT       = "<"  // 小于
+	GT       = ">"  // 大于
+	BANG     = "!"  // 取反
 
 	// Special characters
 	COMMA     = ","
