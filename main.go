@@ -40,7 +40,6 @@ func walkDir(dir string) {
 		}
 		ext := filepath.Ext(path)
 		if ext != ".go" {
-			log.Printf("expected ext 'go', got %s\n", ext)
 			continue
 		}
 		f, err := os.Open(path)
@@ -49,9 +48,12 @@ func walkDir(dir string) {
 			return
 		}
 		defer f.Close()
+		count := 0
 		scan := bufio.NewScanner(f)
 		for scan.Scan() {
+			count++
 			totalLines++
 		}
+		log.Printf("%s: %d\n", path, count)
 	}
 }
