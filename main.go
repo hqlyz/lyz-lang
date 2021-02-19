@@ -1,19 +1,57 @@
 package main
 
 import (
-	"fmt"
+	"bufio"
+	"io/ioutil"
 	"log"
-	"lyz-lang/repl"
 	"os"
-	"os/user"
+	"path/filepath"
 )
 
+var totalLines = 0
+
 func main() {
-	u, err := user.Current()
+	// u, err := user.Current()
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// fmt.Printf("Hello %s! This is the LYZ programming language!\n", u.Username)
+	// fmt.Printf("Feel free to type in commands\n")
+	// repl.Start(os.Stdin, os.Stdout)
+
+	walkDir(".")
+	log.Printf("the total lines in source code: %d\n", totalLines)
+}
+
+func walkDir(dir string) {
+	fis, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return
 	}
-	fmt.Printf("Hello %s! This is the LYZ programming language!\n", u.Username)
-	fmt.Printf("Feel free to type in commands\n")
-	repl.Start(os.Stdin, os.Stdout)
+
+	for _, fi := range fis {
+		path := filepath.Join(dir, fi.Name())
+		if path == ".git" {
+			continue
+		}
+		if fi.IsDir() {
+			walkDir(path)
+		}
+		ext := filepath.Ext(path)
+		if ext != ".go" {
+			log.Printf("expected ext 'go', got %s\n", ext)
+			continue
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer f.Close()
+		scan := bufio.NewScanner(f)
+		for scan.Scan() {
+			totalLines++
+		}
+	}
 }
