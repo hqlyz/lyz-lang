@@ -59,6 +59,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
+	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -75,9 +76,56 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
+// fn(x, y) { x + y; }
+func (p *Parser) parseFunctionLiteral() ast.Expression {
+	fl := &ast.FunctionLiteral{Token: p.curToken}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	fl.Parameters = p.parseFunctionParameters()
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	fl.Body = p.parseBlockStatement()
+
+	return fl
+}
+
+func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+	params := []*ast.Identifier{}
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return params
+	}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	// fn(x,y)
+	for !p.curTokenIs(token.RPAREN) {
+		ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		params = append(params, ident)
+
+		p.nextToken()
+		if p.curTokenIs(token.COMMA) {
+			if !p.peekTokenIs(token.IDENT) {
+				return nil
+			}
+			p.nextToken()
+		}
+	}
+
+	return params
+}
+
 func (p *Parser) parseIfExpression() ast.Expression {
 	exp := &ast.IfExpression{Token: p.curToken}
-	
+
 	if !p.expectPeek(token.LPAREN) {
 		return nil
 	}
@@ -94,7 +142,28 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	}
 
 	exp.Consequence = p.parseBlockStatement()
+
+	if p.peekTokenIs(token.ELSE) {
+		p.nextToken()
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+		exp.Alternative = p.parseBlockStatement()
+	}
 	return exp
+}
+
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	bs := &ast.BlockStatement{Token: p.curToken, Statements: []ast.Statement{}}
+	p.nextToken()
+	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
+		stm := p.parseStatement()
+		if stm != nil {
+			bs.Statements = append(bs.Statements, stm)
+		}
+		p.nextToken()
+	}
+	return bs
 }
 
 func (p *Parser) parseGroupedExpression() ast.Expression {
@@ -273,6 +342,16 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 		p.nextToken()
 		return true
 	}
+	p.peekError(t)
+	return false
+}
+
+func (p *Parser) expectPeek2(t token.TokenType, line string) bool {
+	if p.peekTokenIs(t) {
+		p.nextToken()
+		return true
+	}
+	t = token.TokenType(line)
 	p.peekError(t)
 	return false
 }
