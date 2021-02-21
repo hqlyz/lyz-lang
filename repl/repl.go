@@ -5,6 +5,7 @@ import (
 	"io"
 	"lyz-lang/evaluator"
 	"lyz-lang/lexer"
+	"lyz-lang/object"
 	"lyz-lang/parser"
 )
 
@@ -28,6 +29,7 @@ const MONKEY_FACE = `            __,__
 func Start(in io.Reader, out io.Writer) {
 	scan := bufio.NewScanner(in)
 	w := bufio.NewWriter(out)
+	env := object.NewEnvironment()
 
 	for {
 		w.WriteString(PROMPT)
@@ -46,7 +48,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evaluator.Eval(program)
+		evaluated := evaluator.Eval(program, env)
 		if evaluated != nil {
 			w.WriteString(evaluated.Inspect())
 			w.WriteString("\n")
