@@ -3,6 +3,7 @@ package repl
 import (
 	"bufio"
 	"io"
+	"lyz-lang/evaluator"
 	"lyz-lang/lexer"
 	"lyz-lang/parser"
 )
@@ -44,8 +45,12 @@ func Start(in io.Reader, out io.Writer) {
 			w.Flush()
 			continue
 		}
-		w.WriteString(program.String())
-		w.WriteString("\n")
+
+		evaluated := evaluator.Eval(program)
+		if evaluated != nil {
+			w.WriteString(evaluated.Inspect())
+			w.WriteString("\n")
+		}
 		w.Flush()
 	}
 }
