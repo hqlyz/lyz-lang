@@ -3,6 +3,7 @@ package object
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"lyz-lang/ast"
 	"strings"
 )
@@ -19,6 +20,7 @@ const (
 	STRING_OBJ       = "STRING"
 	BUILTIN_OBJ      = "BUILTIN"
 	ARRAY_OBJ        = "ARRAY"
+	HASH_OBJ         = "HASH"
 )
 
 // Object interface
@@ -38,6 +40,8 @@ func (i *Integer) Inspect() string { return fmt.Sprintf("%d", i.Value) }
 // Type function
 func (i *Integer) Type() ObjectType { return ObjectType(INTEGER_OBJ) }
 
+func (i *Integer) HashKey() HashKey { return HashKey{Type: i.Type(), Value: uint64(i.Value)} }
+
 // Boolean object
 type Boolean struct {
 	Value bool
@@ -48,6 +52,16 @@ func (b *Boolean) Inspect() string { return fmt.Sprintf("%t", b.Value) }
 
 // Type function
 func (b *Boolean) Type() ObjectType { return ObjectType(BOOLEAN_OBJ) }
+
+func (b *Boolean) HashKey() HashKey {
+	var v uint64
+	if b.Value {
+		v = 1
+	} else {
+		v = 0
+	}
+	return HashKey{Type: b.Type(), Value: v}
+}
 
 // Null object represents absence of value
 type Null struct{}
@@ -150,6 +164,12 @@ func (s *String) Type() ObjectType { return STRING_OBJ }
 // Inspect function
 func (s *String) Inspect() string { return s.Value }
 
+func (s *String) HashKey() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+	return HashKey{Type: s.Type(), Value: h.Sum64()}
+}
+
 // BuiltinFunction object
 type BuiltinFunction func(args ...Object) Object
 
@@ -179,5 +199,39 @@ func (a *Array) Inspect() string {
 	out.WriteString("[")
 	out.WriteString(strings.Join(elems, ", "))
 	out.WriteString("]")
+	return out.String()
+}
+
+type Hashable interface {
+	HashKey() HashKey
+}
+
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+func (h *Hash) Type() ObjectType { return HASH_OBJ }
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+
+	pairs := []string{}
+	for _, v := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", v.Key.Inspect(), v.Value.Inspect()))
+	}
+
+	out.WriteString("{")
+	out.Write([]byte(strings.Join(pairs, ", ")))
+	out.WriteString("}")
+
 	return out.String()
 }
