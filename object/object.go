@@ -17,6 +17,8 @@ const (
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
 	STRING_OBJ       = "STRING"
+	BUILTIN_OBJ      = "BUILTIN"
+	ARRAY_OBJ        = "ARRAY"
 )
 
 // Object interface
@@ -78,21 +80,25 @@ func (e *Error) Inspect() string { return "Error: " + e.Message }
 // Type function
 func (e *Error) Type() ObjectType { return ObjectType(ERROR_OBJ) }
 
+// Environment object
 type Environment struct {
 	store map[string]Object
 	outer *Environment
 }
 
+// NewEnclosedEnvironment function
 func NewEnclosedEnvironment(outer *Environment) *Environment {
 	newEnv := NewEnvironment()
 	newEnv.outer = outer
 	return newEnv
 }
 
+// NewEnvironment function
 func NewEnvironment() *Environment {
 	return &Environment{store: map[string]Object{}}
 }
 
+// Get function
 func (e *Environment) Get(name string) (Object, bool) {
 	obj, ok := e.store[name]
 	if !ok && e.outer != nil {
@@ -101,18 +107,23 @@ func (e *Environment) Get(name string) (Object, bool) {
 	return obj, ok
 }
 
+// Set function
 func (e *Environment) Set(name string, obj Object) Object {
 	e.store[name] = obj
 	return obj
 }
 
+// Function object
 type Function struct {
 	Parameters []*ast.Identifier
 	Body       *ast.BlockStatement
 	Env        *Environment
 }
 
+// Type function
 func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
+
+// Inspect function
 func (f *Function) Inspect() string {
 	var out bytes.Buffer
 	params := []string{}
@@ -128,9 +139,45 @@ func (f *Function) Inspect() string {
 	return out.String()
 }
 
+// String object
 type String struct {
 	Value string
 }
 
+// Type function
 func (s *String) Type() ObjectType { return STRING_OBJ }
-func (s *String) Inspect() string  { return s.Value }
+
+// Inspect function
+func (s *String) Inspect() string { return s.Value }
+
+// BuiltinFunction object
+type BuiltinFunction func(args ...Object) Object
+
+// Builtin object
+type Builtin struct {
+	Fn BuiltinFunction
+}
+
+// Type function
+func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
+
+// Inspect function
+func (b *Builtin) Inspect() string { return "builtin function" }
+
+type Array struct {
+	Elements []Object
+}
+
+func (a *Array) Type() ObjectType { return ARRAY_OBJ }
+func (a *Array) Inspect() string {
+	var out bytes.Buffer
+	elems := []string{}
+	for _, el := range a.Elements {
+		elems = append(elems, el.Inspect())
+	}
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(elems, ", "))
+	out.WriteString("]")
+	return out.String()
+}
